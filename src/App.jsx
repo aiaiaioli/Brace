@@ -14,11 +14,7 @@ const RELEVANT = [
   "severe thunderstorm", "tornado", "hurricane", "tropical storm",
 ];
 
-const LEVELS = [
-  { name: "Low", color: "#2e7d32" },
-  { name: "Watch", color: "#ef6c00" },
-  { name: "Act Now", color: "#c62828" },
-];
+const LEVELS = ["Low", "Watch", "Act Now"];
 
 function readProfile() {
   try {
@@ -37,7 +33,6 @@ function getRisk(alerts, profile) {
     const sev = a.properties.severity;
     level = Math.max(level, sev === "Severe" || sev === "Extreme" ? 2 : 1);
   }
-  // If they depend on devices and have under 12h of battery, bump the risk up one level
   if (level > 0 && profile.devices.length > 0 && profile.battery < 12) {
     level = Math.min(2, level + 1);
   }
@@ -52,6 +47,8 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [plan, setPlan] = useState("");
+  const [planLoading, setPlanLoading] = useState(false);
 
   function toggleDevice(d) {
     setDevices((cur) =>
@@ -62,6 +59,7 @@ export default function App() {
   async function check() {
     setError("");
     setResult(null);
+    setPlan("");
     if (!/^\d{5}$/.test(zip)) {
       setError("Enter a 5-digit ZIP code.");
       return;
@@ -91,86 +89,137 @@ export default function App() {
     setLoading(false);
   }
 
+  async function getPlan() {
+    setPlan("");
+    setPlanLoading(true);
+    try {
+      const res = await fetch("/api/checklist", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          place: result.place,
+          level: LEVELS[result.level],
+          devices,
+          battery: Number(battery),
+          alerts: result.alerts.map((a) => a.properties.headline),
+        }),
+      });
+      const data = await res.json();
+      setPlan(data.plan || "Couldn't build a plan right now. Try again.");
+    } catch {
+      setPlan("Couldn't build a plan right now. Try again.");
+    }
+    setPlanLoading(false);
+  }
+
   return (
-    <div style={{ maxWidth: 520, margin: "0 auto", padding: 24 }}>
-      <h1>Brace</h1>
-      <p style={{ background: "#fdecea", padding: 12, borderRadius: 8 }}>
-        <strong>In an emergency, call 911.</strong> Brace is a planning tool,
-        not medical advice.
-      </p>
+    <>
+      <div className="header">
+        <h1>Brace</h1>
+        <p>Be ready before the power goes out</p>
+      </div>
 
-      <h2>Your profile</h2>
-      <label>
-        ZIP code{" "}
-        <input
-          value={zip}
-          onChange={(e) => setZip(e.target.value)}
-          maxLength={5}
-          inputMode="numeric"
-          style={{ fontSize: 18, width: 100 }}
-        />
-      </label>
+      <div className="wrap">
+        <div className="banner">
+          <strong>In an emergency, call 911.</strong> Brace is a planning
+          tool, not medical advice.
+        </div>
 
-      <p>Devices you depend on:</p>
-      {DEVICES.map((d) => (
-        <div key={d}>
-          <label style={{ fontSize: 18 }}>
+        <div className="card">
+          <h2>Your profile</h2>
+
+          <div className="field">
+            <label className="label" htmlFor="zip">ZIP code</label>
             <input
-              type="checkbox"
-              checked={devices.includes(d)}
-              onChange={() => toggleDevice(d)}
-            />{" "}
-            {d}
-          </label>
-        </div>
-      ))}
-
-      <p>
-        <label>
-          Backup battery hours{" "}
-          <input
-            type="number"
-            min="0"
-            value={battery}
-            onChange={(e) => setBattery(e.target.value)}
-            style={{ fontSize: 18, width: 80 }}
-          />
-        </label>
-      </p>
-      <p style={{ fontSize: 14, color: "#666" }}>
-        Saved only in this browser. Never sent to a server.
-      </p>
-
-      <button
-        onClick={check}
-        style={{ fontSize: 20, padding: "12px 20px", width: "100%" }}
-      >
-        {loading ? "Checking..." : "Check my risk"}
-      </button>
-
-      {error && <p style={{ color: "#c62828" }}>{error}</p>}
-
-      {result && (
-        <div style={{ marginTop: 24 }}>
-          <div
-            style={{
-              background: LEVELS[result.level].color,
-              color: "white",
-              padding: 20,
-              borderRadius: 12,
-              fontSize: 28,
-              textAlign: "center",
-            }}
-          >
-            {LEVELS[result.level].name}
-            <div style={{ fontSize: 16 }}>{result.place}</div>
+              id="zip"
+              className="input"
+              value={zip}
+              onChange={(e) => setZip(e.target.value)}
+              maxLength={5}
+              inputMode="numeric"
+              placeholder="75201"
+            />
           </div>
-          {result.alerts.length === 0 && <p>No active alerts for your area.</p>}
-          {result.alerts.map((a) => (
-            <p key={a.id}>{a.properties.headline}</p>
-          ))}
+
+          <div className="field">
+            <span className="label">Devices you depend on</span>
+            <div className="chips">
+              {DEVICES.map((d) => (
+                <label
+                  key={d}
+                  className={"chip" + (devices.includes(d) ? " on" : "")}
+                >
+                  <input
+                    type="checkbox"
+                    checked={devices.includes(d)}
+                    onChange={() => toggleDevice(d)}
+                  />
+                  {d}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="field">
+            <label className="label" htmlFor="battery">
+              Backup battery hours
+            </label>
+            <input
+              id="battery"
+              className="input"
+              type="number"
+              min="0"
+              value={battery}
+              onChange={(e) => setBattery(e.target.value)}
+            />
+          </div>
+
+          <p className="note">
+            Your profile is saved only in this browser. The action plan sends
+            your city, devices, and battery hours to an AI service to write
+            your checklist. Brace doesn't store them.
+          </p>
+
+          <button className="btn" onClick={check} disabled={loading}>
+            {loading ? "Checking..." : "Check my risk"}
+          </button>
+          {error && <p className="error">{error}</p>}
         </div>
-      )}
-    </div>
+
+        {result && (
+          <>
+            <div className={"risk l" + result.level}>
+              <div className="small">Your risk level</div>
+              <div className="big">{LEVELS[result.level]}</div>
+              <div className="place">{result.place}</div>
+            </div>
+
+            <div className="card">
+              <h2>Weather alerts</h2>
+              {result.alerts.length === 0 && <p>No active alerts for your area.</p>}
+              {result.alerts.map((a) => (
+                <div className="alert" key={a.id}>
+                  {a.properties.headline}
+                </div>
+              ))}
+              <button
+                className="btn secondary"
+                onClick={getPlan}
+                disabled={planLoading}
+              >
+                {planLoading ? "Building your plan..." : "Get my action plan"}
+              </button>
+            </div>
+
+            {plan && (
+              <div className="card">
+                <h2>Your action plan</h2>
+                <div className="plan">{plan}</div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </>
   );
 }
