@@ -29,7 +29,7 @@ export default function Centers() {
       <h2>Places to go for relief</h2>
 
       <p className="note">
-        Dallas only for now. Opening times change with the weather, so always
+        Dallas County only for now. Opening times change with the weather, so always
         call ahead.
       </p>
 
