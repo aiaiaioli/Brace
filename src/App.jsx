@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PowerOut from "./PowerOut";
 
 const DEVICES = [
   "Oxygen concentrator",
@@ -49,6 +50,13 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState("");
   const [planLoading, setPlanLoading] = useState(false);
+  const [outage, setOutage] = useState(() => {
+    try {
+      return !!localStorage.getItem("brace-outage-start");
+    } catch {
+      return false;
+    }
+  });
 
   function toggleDevice(d) {
     setDevices((cur) =>
@@ -112,6 +120,16 @@ export default function App() {
     setPlanLoading(false);
   }
 
+  if (outage) {
+    return (
+      <PowerOut
+        battery={Number(battery)}
+        devices={devices}
+        onBack={() => setOutage(false)}
+      />
+    );
+  }
+
   return (
     <>
       <div className="header">
@@ -124,6 +142,10 @@ export default function App() {
           <strong>In an emergency, call 911.</strong> Brace is a planning
           tool, not medical advice.
         </div>
+
+        <button className="btn outage" onClick={() => setOutage(true)}>
+          My power is out
+        </button>
 
         <div className="card">
           <h2>Your profile</h2>
