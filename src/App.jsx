@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PowerOut from "./PowerOut";
+import Centers from "./Centers";
 
 const DEVICES = [
   "Oxygen concentrator",
@@ -239,6 +240,8 @@ export default function App() {
                 <div className="plan">{plan}</div>
               </div>
             )}
+
+            <Centers />
           </>
         )}
       </div>
