@@ -35,7 +35,8 @@ export default async function handler(req, res) {
       : [],
   };
 
-  const key = process.env.GEMINI_API_KEY;
+  const key = (process.env.GEMINI_API_KEY || "").trim();
+  console.log("Has Gemini key:", !!key);
   if (!key) {
     return res.status(200).json({ plan: fallbackPlan(safe) });
   }
@@ -50,7 +51,7 @@ Active weather alerts: ${safe.alerts.join(" | ") || "none"}
 
 Write a short checklist of 4 to 6 actions in priority order, most urgent first. Be specific to their devices and battery hours. Use plain, calm language with short sentences. Start each line with a number. Do not give medical advice or change any treatment. Always end with the line: "In an emergency, call 911."`;
 
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
 
   try {
     const r = await fetch(
@@ -69,10 +70,12 @@ Write a short checklist of 4 to 6 actions in priority order, most urgent first. 
     const data = await r.json();
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!r.ok || !text) {
+      console.log("Gemini error:", r.status, JSON.stringify(data));
       return res.status(200).json({ plan: fallbackPlan(safe) });
     }
     return res.status(200).json({ plan: text });
-  } catch {
+  } catch (err) {
+    console.log("Gemini fetch failed:", String(err));
     return res.status(200).json({ plan: fallbackPlan(safe) });
   }
 }
