@@ -145,3 +145,23 @@ body {
 
 .steps { margin: 0; padding-left: 24px; }
 .steps li { margin-bottom: 12px; font-size: 20px; }
+.links { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.links .btn { display: block; text-align: center; text-decoration: none; margin-top: 0; font-size: 18px; }
+
+.site {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.site a { color: var(--brand); font-weight: 600; }
+.links { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.links .btn { display: block; text-align: center; text-decoration: none; margin-top: 0; font-size: 18px; }
+
+.site {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.site a { color: var(--brand); font-weight: 600; }
